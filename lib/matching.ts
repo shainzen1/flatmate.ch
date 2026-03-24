@@ -1,44 +1,75 @@
-import { vibeCategories, Listing } from "./mvp-data";
+import {
+  VIBE_DIMENSIONS,
+  type Listing,
+  type VibeSliderValues,
+  type VibeDimensionId,
+} from "./mvp-data";
 
-export function calculateMatchScore(userSelections: Record<string, any>, listing: Listing): number {
-  if (!userSelections || Object.keys(userSelections).length === 0) return 0;
-  if (!listing.vibeValues) {
-    // Fallback to tag-based matching if no vibeValues
-    const matchingTags = listing.vibeTags.filter(tag => 
-      Object.values(userSelections).some(val => 
-        typeof val === 'string' ? val === tag : false
-      )
-    );
-    return Math.round((matchingTags.length / Math.max(listing.vibeTags.length, 1)) * 100);
+/**
+ * Chemistry score: 100 − average absolute difference across 5 dimensions.
+ * Returns an integer 0-100 (higher = better match).
+ */
+export function calculateMatchScore(
+  user: Partial<VibeSliderValues> | null | undefined,
+  listing: Listing
+): number {
+  if (!user || Object.keys(user).length === 0) return 0;
+
+  let totalDiff = 0;
+  let count = 0;
+
+  for (const dim of VIBE_DIMENSIONS) {
+    const uid = dim.id as VibeDimensionId;
+    const uVal = user[uid];
+    const lVal = listing.vibeValues[uid];
+    if (uVal === undefined || lVal === undefined) continue;
+    totalDiff += Math.abs(uVal - lVal);
+    count++;
   }
 
-  let totalWeight = 0;
-  let totalScore = 0;
+  if (count === 0) return 0;
+  const avgDiff = totalDiff / count;
+  return Math.round(Math.max(0, Math.min(100, 100 - avgDiff)));
+}
 
-  for (const category of vibeCategories) {
-    const userVal = userSelections[category.id];
-    const listingVal = listing.vibeValues[category.id];
+export type MatchTag = {
+  dimensionId: VibeDimensionId;
+  label: string;
+  diff: number;
+};
 
-    if (userVal === undefined || listingVal === undefined) continue;
+/**
+ * Returns the top 3 dimensions where user and listing are closest,
+ * formatted as human-readable match tags (e.g. "Both Social").
+ */
+export function getTopMatchTags(
+  user: Partial<VibeSliderValues> | null | undefined,
+  listing: Listing,
+  limit = 3
+): MatchTag[] {
+  if (!user || Object.keys(user).length === 0) return [];
 
-    if (category.type === "choice") {
-      totalWeight += 1;
-      if (userVal === listingVal) totalScore += 1;
-    } else if (category.type === "slider" && category.sliders) {
-      for (const slider of category.sliders) {
-        const uVal = userVal[slider.id];
-        const lVal = listingVal[slider.id];
-        if (uVal !== undefined && lVal !== undefined) {
-          totalWeight += 1;
-          const range = Math.max(slider.max - slider.min, 1);
-          const diff = Math.abs(uVal - lVal);
-          const similarity = 1 - diff / range;
-          totalScore += similarity;
-        }
-      }
-    }
+  const FRIENDLY_LABELS: Record<VibeDimensionId, string> = {
+    socialBattery: "Social",
+    cleanliness: "Clean",
+    guestPolicy: "Guest-Friendly",
+    sharedLiving: "Community",
+    noiseLevel: "Noise Vibe",
+  };
+
+  const diffs: MatchTag[] = [];
+
+  for (const dim of VIBE_DIMENSIONS) {
+    const uid = dim.id as VibeDimensionId;
+    const uVal = user[uid];
+    const lVal = listing.vibeValues[uid];
+    if (uVal === undefined || lVal === undefined) continue;
+    diffs.push({
+      dimensionId: uid,
+      label: `Both ${FRIENDLY_LABELS[uid]}`,
+      diff: Math.abs(uVal - lVal),
+    });
   }
 
-  if (totalWeight === 0) return 0;
-  return Math.round((totalScore / totalWeight) * 100);
+  return diffs.sort((a, b) => a.diff - b.diff).slice(0, limit);
 }

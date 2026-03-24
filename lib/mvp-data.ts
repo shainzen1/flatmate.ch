@@ -1,27 +1,59 @@
-export type VibeCategory = {
+// ---------------------------------------------------------------------------
+// Vibe Dimension Model — 5 anchored personality sliders (0-100)
+// ---------------------------------------------------------------------------
+
+export type VibeDimension = {
   id: string;
   label: string;
-  description: string;
-  type: "choice" | "slider";
-  options?: VibeOption[];
-  sliders?: VibeSlider[];
+  anchorLow: string;
+  anchorHigh: string;
 };
 
-export type VibeSlider = {
-  id: string;
-  label: string;
-  min: number;
-  max: number;
-  step: number;
-  unit: string;
-  icon?: string;
-};
+export const VIBE_DIMENSIONS: VibeDimension[] = [
+  {
+    id: "socialBattery",
+    label: "Social Battery",
+    anchorLow: "Room is my sanctuary",
+    anchorHigh: "Door is always open",
+  },
+  {
+    id: "cleanliness",
+    label: "Cleanliness",
+    anchorLow: "Life is messy",
+    anchorHigh: "Vacuuming is my hobby",
+  },
+  {
+    id: "guestPolicy",
+    label: "Guest Policy",
+    anchorLow: "No overnight guests",
+    anchorHigh: "The more, the merrier!",
+  },
+  {
+    id: "sharedLiving",
+    label: "Shared Living",
+    anchorLow: "Parallel lives (Zweck-WG)",
+    anchorHigh: "We're a family",
+  },
+  {
+    id: "noiseLevel",
+    label: "Noise Level",
+    anchorLow: "Library silence",
+    anchorHigh: "Music & laughter always",
+  },
+];
 
-export type VibeOption = {
-  id: string;
-  label: string;
-  emoji: string;
-};
+export type VibeDimensionId =
+  | "socialBattery"
+  | "cleanliness"
+  | "guestPolicy"
+  | "sharedLiving"
+  | "noiseLevel";
+
+export type VibeSliderValues = Record<VibeDimensionId, number>;
+
+// ---------------------------------------------------------------------------
+// Listing types
+// ---------------------------------------------------------------------------
 
 export type Flatmate = {
   name: string;
@@ -34,110 +66,49 @@ export type Listing = {
   id: string;
   title: string;
   vibeTags: string[];
-  vibeValues?: Record<string, any>; // maps categoryId -> { sliderId: value } or categoryId -> choiceId
+  vibeValues: VibeSliderValues;
   flatmates: Flatmate[];
-  images: {
-    room: string;
-    flat: string;
-  };
-  room: {
-    price: number;
-    size: number;
-    available: string;
-  };
-  location: {
-    city: string;
-    neighborhood: string;
-  };
+  images: { room: string; flat: string };
+  room: { price: number; size: number; available: string };
+  location: { city: string; neighborhood: string };
   description: string;
 };
 
-export const vibeCategories: VibeCategory[] = [
-  {
-    id: "cleanliness-habits",
-    label: "Sauberkeit",
-    description: "Wie oft schwingst du den Putzlappen?",
-    type: "slider",
-    sliders: [
-      {
-        id: "kitchen",
-        label: "Küche",
-        min: 0,
-        max: 7,
-        step: 1,
-        unit: "x pro Woche",
-      },
-      {
-        id: "bathroom",
-        label: "Bad",
-        min: 0,
-        max: 4,
-        step: 1,
-        unit: "x pro Monat",
-      },
-    ],
-  },
-  {
-    id: "social-battery",
-    label: "Social Battery",
-    description: "Wie viele Abende in der Woche hast du gerne für dich alleine?",
-    type: "slider",
-    sliders: [
-      {
-        id: "alone-time",
-        label: "Me-Time",
-        min: 0,
-        max: 7,
-        step: 1,
-        unit: "Abende pro Woche",
-      },
-    ],
-  },
-  {
-    id: "guest-policy",
-    label: "Besuch",
-    description: "Wie oft hast du gerne Gäste oder Übernachtungsbesuch?",
-    type: "slider",
-    sliders: [
-      {
-        id: "guests",
-        label: "Gäste",
-        min: 0,
-        max: 7,
-        step: 1,
-        unit: "Tage pro Woche",
-      },
-    ],
-  },
-  {
-    id: "sharing",
-    label: "Teilen & Gemeinschaft",
-    description: "Was teilst du gerne mit deinen Mitbewohnern?",
-    type: "slider",
-    sliders: [
-      {
-        id: "sharing-level",
-        label: "Teil-Freudigkeit",
-        min: 0,
-        max: 100,
-        step: 10,
-        unit: "% (Alles teilen bis strikt getrennt)",
-      },
-    ],
-  },
-  {
-    id: "noise-level",
-    label: "Noise Level",
-    description: "What's your comfort zone with noise at home?",
-    type: "choice",
-    options: [
-      { id: "library-quiet", label: "Library Quiet", emoji: "🤫" },
-      { id: "low-key", label: "Low Key", emoji: "🎧" },
-      { id: "lively", label: "Lively", emoji: "🔊" },
-      { id: "festival-mode", label: "Festival Mode", emoji: "🥁" },
-    ],
-  },
-];
+// ---------------------------------------------------------------------------
+// Decorative vibe-tag label map (for feed-card chips)
+// ---------------------------------------------------------------------------
+
+const VIBE_TAG_LABELS: Record<string, { label: string; emoji: string }> = {
+  "creative-chaos": { label: "Creative Chaos", emoji: "🎨" },
+  "social-butterfly": { label: "Social Butterfly", emoji: "🦋" },
+  lively: { label: "Lively", emoji: "🔊" },
+  "night-owl": { label: "Night Owl", emoji: "🦉" },
+  "cook-together": { label: "Cook Together", emoji: "🍳" },
+  tidy: { label: "Tidy", emoji: "✨" },
+  balanced: { label: "Balanced", emoji: "⚖️" },
+  "low-key": { label: "Low Key", emoji: "🎧" },
+  "early-bird": { label: "Early Bird", emoji: "🌅" },
+  "meal-prep": { label: "Meal Prep", emoji: "🥗" },
+  flexible: { label: "Flexible", emoji: "🤸" },
+  "takeout-lover": { label: "Takeout Lover", emoji: "🥡" },
+  spotless: { label: "Spotless", emoji: "🧹" },
+  "quiet-homebody": { label: "Quiet Homebody", emoji: "📚" },
+  "library-quiet": { label: "Library Quiet", emoji: "🤫" },
+  relaxed: { label: "Relaxed", emoji: "😌" },
+  "party-mode": { label: "Party Mode", emoji: "🎉" },
+  "master-chef": { label: "Master Chef", emoji: "👨‍🍳" },
+  "festival-mode": { label: "Festival Mode", emoji: "🥁" },
+};
+
+export function getVibeLabel(
+  vibeId: string
+): { label: string; emoji: string } | null {
+  return VIBE_TAG_LABELS[vibeId] ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// 10 Mock Listings — vibeValues on 0-100 scale per dimension
+// ---------------------------------------------------------------------------
 
 export const listings: Listing[] = [
   {
@@ -145,11 +116,11 @@ export const listings: Listing[] = [
     title: "Chill Creative Collective",
     vibeTags: ["creative-chaos", "social-butterfly", "lively", "night-owl", "cook-together"],
     vibeValues: {
-      "cleanliness-habits": { kitchen: 3, bathroom: 1 },
-      "social-battery": { "alone-time": 1 },
-      "guest-policy": { guests: 4 },
-      sharing: { "sharing-level": 80 },
-      "noise-level": "lively"
+      socialBattery: 85,
+      cleanliness: 30,
+      guestPolicy: 60,
+      sharedLiving: 80,
+      noiseLevel: 75,
     },
     flatmates: [
       { name: "Lina", age: 26, occupation: "Graphic Designer", since: "2 years" },
@@ -169,11 +140,11 @@ export const listings: Listing[] = [
     title: "Morning Run & Meal Prep Squad",
     vibeTags: ["tidy", "balanced", "low-key", "early-bird", "meal-prep"],
     vibeValues: {
-      "cleanliness-habits": { kitchen: 3, bathroom: 1 },
-      "social-battery": { "alone-time": 1 },
-      "guest-policy": { guests: 4 },
-      sharing: { "sharing-level": 80 },
-      "noise-level": "lively"
+      socialBattery: 65,
+      cleanliness: 75,
+      guestPolicy: 40,
+      sharedLiving: 70,
+      noiseLevel: 35,
     },
     flatmates: [
       { name: "Sarah", age: 30, occupation: "Product Manager", since: "3 years" },
@@ -193,11 +164,11 @@ export const listings: Listing[] = [
     title: "Study Hard, Play Hard",
     vibeTags: ["tidy", "social-butterfly", "low-key", "flexible", "takeout-lover"],
     vibeValues: {
-      "cleanliness-habits": { kitchen: 6, bathroom: 3 },
-      "social-battery": { "alone-time": 2 },
-      "guest-policy": { guests: 1 },
-      sharing: { "sharing-level": 40 },
-      "noise-level": "low-key"
+      socialBattery: 70,
+      cleanliness: 80,
+      guestPolicy: 15,
+      sharedLiving: 40,
+      noiseLevel: 30,
     },
     flatmates: [
       { name: "Amélie", age: 23, occupation: "Med Student", since: "1 year" },
@@ -218,11 +189,11 @@ export const listings: Listing[] = [
     title: "Quiet Professional Pad",
     vibeTags: ["spotless", "quiet-homebody", "library-quiet", "early-bird", "meal-prep"],
     vibeValues: {
-      "cleanliness-habits": { kitchen: 7, bathroom: 4 },
-      "social-battery": { "alone-time": 5 },
-      "guest-policy": { guests: 0 },
-      sharing: { "sharing-level": 10 },
-      "noise-level": "library-quiet"
+      socialBattery: 15,
+      cleanliness: 95,
+      guestPolicy: 5,
+      sharedLiving: 10,
+      noiseLevel: 5,
     },
     flatmates: [
       { name: "Thomas", age: 34, occupation: "Architect", since: "4 years" },
@@ -241,11 +212,11 @@ export const listings: Listing[] = [
     title: "International Foodie House",
     vibeTags: ["relaxed", "party-mode", "lively", "night-owl", "master-chef"],
     vibeValues: {
-      "cleanliness-habits": { kitchen: 7, bathroom: 4 },
-      "social-battery": { "alone-time": 5 },
-      "guest-policy": { guests: 0 },
-      sharing: { "sharing-level": 10 },
-      "noise-level": "library-quiet"
+      socialBattery: 80,
+      cleanliness: 55,
+      guestPolicy: 70,
+      sharedLiving: 75,
+      noiseLevel: 80,
     },
     flatmates: [
       { name: "Giulia", age: 27, occupation: "Chef", since: "2 years" },
@@ -266,11 +237,11 @@ export const listings: Listing[] = [
     title: "Green Living Co-op",
     vibeTags: ["tidy", "balanced", "low-key", "early-bird", "cook-together"],
     vibeValues: {
-      "cleanliness-habits": { kitchen: 2, bathroom: 1 },
-      "social-battery": { "alone-time": 1 },
-      "guest-policy": { guests: 6 },
-      sharing: { "sharing-level": 90 },
-      "noise-level": "lively"
+      socialBattery: 85,
+      cleanliness: 45,
+      guestPolicy: 85,
+      sharedLiving: 90,
+      noiseLevel: 60,
     },
     flatmates: [
       { name: "Lea", age: 31, occupation: "Sustainability Consultant", since: "3 years" },
@@ -290,11 +261,11 @@ export const listings: Listing[] = [
     title: "Tech & Board Game Nights",
     vibeTags: ["relaxed", "social-butterfly", "low-key", "night-owl", "takeout-lover"],
     vibeValues: {
-      "cleanliness-habits": { kitchen: 5, bathroom: 2 },
-      "social-battery": { "alone-time": 3 },
-      "guest-policy": { guests: 2 },
-      sharing: { "sharing-level": 70 },
-      "noise-level": "low-key"
+      socialBattery: 55,
+      cleanliness: 60,
+      guestPolicy: 30,
+      sharedLiving: 70,
+      noiseLevel: 35,
     },
     flatmates: [
       { name: "David", age: 27, occupation: "Software Engineer", since: "2 years" },
@@ -314,11 +285,11 @@ export const listings: Listing[] = [
     title: "Music & Art Collective",
     vibeTags: ["creative-chaos", "party-mode", "festival-mode", "night-owl", "cook-together"],
     vibeValues: {
-      "cleanliness-habits": { kitchen: 4, bathroom: 1 },
-      "social-battery": { "alone-time": 4 },
-      "guest-policy": { guests: 1 },
-      sharing: { "sharing-level": 30 },
-      "noise-level": "low-key"
+      socialBattery: 45,
+      cleanliness: 25,
+      guestPolicy: 15,
+      sharedLiving: 30,
+      noiseLevel: 85,
     },
     flatmates: [
       { name: "Zara", age: 25, occupation: "DJ / Producer", since: "1 year" },
@@ -339,11 +310,11 @@ export const listings: Listing[] = [
     title: "Outdoor Adventure Base",
     vibeTags: ["relaxed", "balanced", "lively", "early-bird", "meal-prep"],
     vibeValues: {
-      "cleanliness-habits": { kitchen: 1, bathroom: 1 },
-      "social-battery": { "alone-time": 0 },
-      "guest-policy": { guests: 5 },
-      sharing: { "sharing-level": 100 },
-      "noise-level": "festival-mode"
+      socialBattery: 95,
+      cleanliness: 20,
+      guestPolicy: 75,
+      sharedLiving: 100,
+      noiseLevel: 90,
     },
     flatmates: [
       { name: "Nico", age: 28, occupation: "Mountain Guide", since: "3 years" },
@@ -363,11 +334,11 @@ export const listings: Listing[] = [
     title: "Cozy Sunday Brunch Crew",
     vibeTags: ["tidy", "social-butterfly", "low-key", "flexible", "master-chef"],
     vibeValues: {
-      "cleanliness-habits": { kitchen: 5, bathroom: 3 },
-      "social-battery": { "alone-time": 2 },
-      "guest-policy": { guests: 3 },
-      sharing: { "sharing-level": 80 },
-      "noise-level": "low-key"
+      socialBattery: 70,
+      cleanliness: 70,
+      guestPolicy: 45,
+      sharedLiving: 80,
+      noiseLevel: 35,
     },
     flatmates: [
       { name: "Sophie", age: 29, occupation: "Journalist", since: "2 years" },
@@ -384,11 +355,3 @@ export const listings: Listing[] = [
       "Sunday brunch is our weekly ritual — fresh bread, eggs, the works. We're warm, welcoming, and love a good chat over coffee. The flat overlooks the lake and always smells like something baking.",
   },
 ];
-
-export function getVibeLabel(vibeId: string): { label: string; emoji: string } | null {
-  for (const category of vibeCategories) {
-    const option = category.options?.find((o) => o.id === vibeId);
-    if (option) return { label: option.label, emoji: option.emoji };
-  }
-  return null;
-}

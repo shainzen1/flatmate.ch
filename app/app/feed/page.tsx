@@ -1,98 +1,55 @@
 "use client";
 
-import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import { listings } from "@/lib/mvp-data";
 import { FeedCard } from "@/components/mvp/feed-card";
-import { Button } from "@/components/ui/button";
-import { RotateCcw, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { calculateMatchScore } from "@/lib/matching";
+import { useUserVibe } from "@/components/mvp/user-vibe-context";
+import { FeedHeader } from "@/components/mvp/feed-header";
 
-const STORAGE_KEY = "flatmate-vibe";
 const FeedMap = dynamic(
   () => import("@/components/mvp/feed-map").then((mod) => mod.FeedMap),
   { ssr: false }
 );
 
-function useVibeSelections(): Record<string, any> {
-  const subscribe = useCallback((callback: () => void) => {
-    window.addEventListener("storage", callback);
-    return () => window.removeEventListener("storage", callback);
-  }, []);
-
-  const getSnapshot = useCallback(
-    () => localStorage.getItem(STORAGE_KEY) ?? "",
-    []
-  );
-
-  const getServerSnapshot = useCallback(() => "", []);
-
-  const raw = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-
-  return useMemo(() => {
-    if (!raw) return {};
-    try {
-      return JSON.parse(raw);
-    } catch {
-      return {};
-    }
-  }, [raw]);
-}
-
 export default function FeedPage() {
-  const userSelections = useVibeSelections();
-  const [view, setView] = useState<"list" | "map">("list");
+  const { sliders: userSelections } = useUserVibe();
+  const searchParams = useSearchParams();
+  const initialView = searchParams.get("view") === "map" ? "map" : "list";
+  const [view, setView] = useState<"list" | "map">(initialView);
 
   const sorted = useMemo(() => {
-    // Return typed listings with scores
-    const withScores = listings.map(l => ({
+    const withScores = listings.map((l) => ({
       ...l,
-      score: calculateMatchScore(userSelections, l)
+      score: calculateMatchScore(userSelections, l),
     }));
-
     return withScores.sort((a, b) => b.score - a.score);
   }, [userSelections]);
 
   const hasSelections = Object.keys(userSelections).length > 0;
 
   return (
-    <div className={view === "map" ? "h-screen overflow-hidden bg-background" : "min-h-screen bg-background"}>
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-lg">
-        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6">
-          <Link href="/" className="text-lg font-semibold tracking-tight">
-            flatmate<span className="text-primary/60">.ch</span>
-          </Link>
-          <div className="flex items-center gap-2">
-            <div className="inline-flex items-center gap-1 rounded-xl border border-border bg-card p-1">
-              <Button
-                variant={view === "list" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setView("list")}
-              >
-                List
-              </Button>
-              <Button
-                variant={view === "map" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setView("map")}
-              >
-                Map
-              </Button>
-            </div>
-            <Link
-              href="/app"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <RotateCcw className="size-3" />
-              Retake vibe quiz
-            </Link>
-          </div>
-        </div>
-      </header>
+    <div
+      className={
+        view === "map"
+          ? "h-screen overflow-hidden bg-background"
+          : "min-h-screen bg-background"
+      }
+    >
+      <FeedHeader view={view} onViewChange={setView} />
 
-      <main className={view === "map" ? "h-[calc(100vh-3.5rem)]" : "mx-auto max-w-5xl px-6 py-8"}>
+      <main
+        className={
+          view === "map"
+            ? "h-[calc(100vh-3.5rem)]"
+            : "mx-auto max-w-5xl px-6 py-8"
+        }
+      >
         {/* Summary */}
         {view === "list" && hasSelections && (
           <div className="mb-8 flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
@@ -105,15 +62,30 @@ export default function FeedPage() {
         )}
 
         {view === "list" ? (
-          <div className="grid gap-5">
-            {sorted.map((listing) => (
-              <FeedCard
-                key={listing.id}
-                listing={listing}
-                userSelections={userSelections}
-              />
-            ))}
-          </div>
+          <LayoutGroup>
+            <div className="grid gap-5">
+              <AnimatePresence mode="popLayout">
+                {sorted.map((listing) => (
+                  <motion.div
+                    key={listing.id}
+                    layout
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{
+                      layout: { type: "spring", stiffness: 350, damping: 30 },
+                      opacity: { duration: 0.2 },
+                    }}
+                  >
+                    <FeedCard
+                      listing={listing}
+                      userSelections={userSelections}
+                    />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          </LayoutGroup>
         ) : (
           <FeedMap listings={sorted} userSelections={userSelections} />
         )}
@@ -121,14 +93,14 @@ export default function FeedPage() {
         {/* End */}
         {view === "list" && (
           <p className="mt-10 text-center text-sm text-muted-foreground">
-          You&apos;ve seen all {listings.length} WGs.{" "}
-          <Link
-            href="/app"
-            className="font-medium text-primary hover:underline"
-          >
-            Update your vibe
-          </Link>{" "}
-          for better matches.
+            You&apos;ve seen all {listings.length} WGs.{" "}
+            <Link
+              href="/app"
+              className="font-medium text-primary hover:underline"
+            >
+              Update your vibe
+            </Link>{" "}
+            for better matches.
           </p>
         )}
       </main>
